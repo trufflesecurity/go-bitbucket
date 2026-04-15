@@ -20,18 +20,22 @@ func TestWorkspaceList_Success(t *testing.T) {
 			"size":    float64(2),
 			"values": []interface{}{
 				map[string]interface{}{
-					"slug":       "workspace1",
-					"name":       "Workspace One",
-					"uuid":       "{ws-1}",
-					"type":       "workspace",
-					"is_private": false,
+					"workspace": map[string]interface{}{
+						"slug":       "workspace1",
+						"name":       "Workspace One",
+						"uuid":       "{ws-1}",
+						"type":       "workspace",
+						"is_private": false,
+					},
 				},
 				map[string]interface{}{
-					"slug":       "workspace2",
-					"name":       "Workspace Two",
-					"uuid":       "{ws-2}",
-					"type":       "workspace",
-					"is_private": true,
+					"workspace": map[string]interface{}{
+						"slug":       "workspace2",
+						"name":       "Workspace Two",
+						"uuid":       "{ws-2}",
+						"type":       "workspace",
+						"is_private": true,
+					},
 				},
 			},
 		})
@@ -41,7 +45,7 @@ func TestWorkspaceList_Success(t *testing.T) {
 	result, err := client.Workspaces.List()
 
 	require.NoError(t, err)
-	assert.Equal(t, "/2.0/workspaces", receivedPath)
+	assert.Equal(t, "/2.0/user/workspaces", receivedPath)
 	assert.Len(t, result.Workspaces, 2)
 	assert.Equal(t, 1, result.Page)
 	assert.Equal(t, 10, result.Pagelen)
@@ -273,9 +277,11 @@ func TestDecodeWorkspaceList_Success(t *testing.T) {
 		"size":    float64(1),
 		"values": []interface{}{
 			map[string]interface{}{
-				"slug": "ws1",
-				"name": "Workspace 1",
-				"type": "workspace",
+				"workspace": map[string]interface{}{
+					"slug": "ws1",
+					"name": "Workspace 1",
+					"type": "workspace",
+				},
 			},
 		},
 	}
@@ -287,6 +293,33 @@ func TestDecodeWorkspaceList_Success(t *testing.T) {
 	assert.Equal(t, 10, result.Pagelen)
 	assert.Equal(t, 1, result.Size)
 	assert.Len(t, result.Workspaces, 1)
+}
+
+func TestDecodeWorkspaceList_InvalidFormat(t *testing.T) {
+	t.Parallel()
+	_, err := decodeWorkspaceList("not a map")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not a valid format")
+}
+
+func TestDecodeWorkspaceList_MissingValues(t *testing.T) {
+	t.Parallel()
+	response := map[string]interface{}{
+		"page": float64(1),
+	}
+	_, err := decodeWorkspaceList(response)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "missing 'values' field")
+}
+
+func TestDecodeWorkspaceList_ValuesNotList(t *testing.T) {
+	t.Parallel()
+	response := map[string]interface{}{
+		"values": "not a list",
+	}
+	_, err := decodeWorkspaceList(response)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "'values' field is not a list")
 }
 
 func TestDecodePermission_WithPermission(t *testing.T) {

@@ -140,8 +140,18 @@ func decodeWorkspace(workspace interface{}) (*Workspace, error) {
 }
 
 func decodeWorkspaceList(workspaceResponse interface{}) (*WorkspaceList, error) {
-	workspaceResponseMap := workspaceResponse.(map[string]interface{})
-	workspaceMapList := workspaceResponseMap["values"].([]interface{})
+	workspaceResponseMap, ok := workspaceResponse.(map[string]interface{})
+	if !ok {
+		return nil, errors.New("not a valid format")
+	}
+	valuesRaw, ok := workspaceResponseMap["values"]
+	if !ok || valuesRaw == nil {
+		return nil, errors.New("response missing 'values' field")
+	}
+	workspaceMapList, ok := valuesRaw.([]interface{})
+	if !ok {
+		return nil, errors.New("'values' field is not a list")
+	}
 
 	var workspaces []Workspace
 	for _, item := range workspaceMapList {
